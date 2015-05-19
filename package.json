@@ -17,6 +17,8 @@
     "express": "^4.0.0",
     "express-session": "^1.11.1",
     "express-then": "^1.0.2",
+    "facebook-node-sdk": "^0.2.0",
+    "fb": "^0.7.0",
     "lodash": "^3.8.0",
     "mongoose": "^4.0.3",
     "morgan": "^1.0.0",
@@ -27,6 +29,8 @@
     "passport-google-oauth": "^0.2.0",
     "passport-local": "^1.0.0",
     "passport-twitter": "^1.0.3",
+    "promise": "^7.0.1",
+    "request-promise": "^0.4.2",
     "require-dir": "^0.3.0",
     "songbird": "^1.0.1",
     "twitter": "^1.2.5"

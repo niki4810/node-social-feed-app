@@ -19,6 +19,11 @@
             padding-top:10px;
         }
 
+        img {
+            width:48px;
+            height:auto;
+        }
+
     </style>
 </head>
 <body>
@@ -58,33 +63,33 @@
       <!-- Tab panes -->
       <div class="tab-content">
         <div role="tabpanel" class="tab-pane fade in active" id="twitter">
-            <div class="row">
-                <% for(var post,i=0; post=posts[i]; i++) {%>
+            <div class="row">                
+                <% for(var tweet,i=0; tweet=twitterPosts[i]; i++) {%>
                     <div class="col-xs-12">
                         <div class="well">
                             <div class="row">
                                 <div class="col-xs-2">
-                                    <img src="<%= post.image %>"/>
+                                    <img src="<%= tweet.image %>"/>
                                 </div>
                                 <div class="col-xs-10">
                                     <p>
-                                        <strong><%= post.name %></strong> <%= post.username %><br>
-                                        <%- post.text %>
+                                        <strong><%= tweet.name %></strong> <%= tweet.username %><br>
+                                        <%- tweet.text %>
                                     </p>
                                 </div> 
                             </div>
                             <div class="row">
                                <div class="col-xs-8 col-md-10 _icons">
-                                   <i class="fa <%= post.liked ? "fa-thumbs-up" : "fa-thumbs-o-up" %> fa-2x _like" name="like<%= post.id %>"></i> 
-                                    <a href="/reply/<%= post.id %>" class="fa fa-reply fa-2x"></a>
-                                    <%if (post.retweeted) {%>
-                                        <i data-id="<%= post.retweedStatusId %>" class="fa fa-2x fa-share-square _unshare"></i>
+                                   <i class="fa <%= tweet.liked ? "fa-thumbs-up" : "fa-thumbs-o-up" %> fa-2x _like" name="like<%= tweet.id %>"></i> 
+                                    <a href="/reply/<%= tweet.id %>" class="fa fa-reply fa-2x"></a>
+                                    <%if (tweet.retweeted) {%>
+                                        <i data-id="<%= tweet.retweedStatusId %>" class="fa fa-2x fa-share-square _unshare"></i>
                                     <%} else {%>
-                                        <a href="/share/<%= post.id %>" class="fa fa-2x fa-share-square-o"></a>
+                                        <a href="/share/<%= tweet.id %>" class="fa fa-2x fa-share-square-o"></a>
                                     <% }%>                                    
                                </div> 
                                <div class="col-xs-4 col-md-2">
-                                   <span class="btn <%= post.network.class %>"><span class="fa fa-<%= post.network.icon %>"></span> <%= post.network.name %></a>
+                                   <span class="btn <%= tweet.network.class %>"><span class="fa fa-<%= tweet.network.icon %>"></span> <%= tweet.network.name %></a>
                                </div>
                             </div>
                         </div>
@@ -93,7 +98,36 @@
             </div>
         </div>
         <div role="tabpanel" class="tab-pane fade" id="facebook">
-            TODO
+            <div class="row">
+                <% for(var fbFeed,i=0; fbFeed=fbFeeds[i]; i++) {%>
+                    <div class="col-xs-12">
+                        <div class="well">
+                            <div class="row">
+                                <div class="col-xs-2">
+                                    <img src="<%= fbFeed.image %>"/>
+                                </div>
+                                <div class="col-xs-10">
+                                    <p>
+                                        <strong><%= fbFeed.name %></strong> <%= fbFeed.username %><br>
+                                        <%- fbFeed.text %>
+                                    </p>
+                                </div> 
+                            </div>
+                            <div class="row">
+                               <div class="col-xs-8 col-md-10 _icons">
+                                   <i class="fa <%= fbFeed.liked ? "fa-thumbs-up" : "fa-thumbs-o-up" %> fa-2x _like" name="like<%= fbFeed.id %>"></i>
+                                   (<%= fbFeed.likedCount %>) 
+                                    <a href="/reply/<%= fbFeed.id %>" class="fa fa-reply fa-2x"></a>
+                                    <i data-id="<%= fbFeed.retweedStatusId %>" class="fa fa-2x fa-share-square _unshare"></i>                                    
+                               </div> 
+                               <div class="col-xs-4 col-md-2">
+                                   <span class="btn <%= fbFeed.network.class %>"><span class="fa fa-<%= fbFeed.network.icon %>"></span> <%= fbFeed.network.name %></a>
+                               </div>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
         </div>
         <div role="tabpanel" class="tab-pane fade" id="google">
             TODO

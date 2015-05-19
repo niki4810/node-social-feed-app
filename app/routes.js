@@ -2,19 +2,33 @@ let isLoggedIn = require('./middlewares/isLoggedIn')
 let _ = require('lodash')
 let then = require('express-then')
 let Twitter  = require('twitter')
+let FB = require('fb');
+let rp = require('request-promise')
+let Promise = require('promise');
 let scope = 'email'
+let fs = require('fs')
+
+let facebookScope = 'public_profile,email,user_friends'
+
 let networks = {
   twitter: {
       'icon': 'twitter',
       'name': 'Twitter',
       'class': 'btn-info'    
+  },
+  facebook: {
+      icon: 'facebook',
+      name: 'Facebook',
+      class: 'btn-primary'
   }
 }
-let posts = require('../data/posts')
+
+// let posts = require('../data/posts')
 
 module.exports = (app) => {
     let passport = app.passport
     let twitterConfig = app.config.auth.twitter
+    let facebookConfig = app.config.auth.facebook
 
     app.get('/', (req, res) => res.render('index.ejs'))
 
@@ -57,6 +71,7 @@ module.exports = (app) => {
   //Timeline routes
 
   app.get('/timeline', isLoggedIn, then(async (req,res) => {
+    // get tweets from twitter
     let twitterClient = new Twitter({
       consumer_key: twitterConfig.consumerKey,
       consumer_secret: twitterConfig.consumerSecret,
@@ -65,7 +80,7 @@ module.exports = (app) => {
     })
     
    let [tweets] = await twitterClient.promise.get('statuses/home_timeline') 
-   posts = _.map(tweets, function(tweet){
+   let twitterPosts = _.map(tweets, function(tweet){
     return {
       id: tweet.id_str,
       image: tweet.user.profile_image_url,
@@ -79,9 +94,40 @@ module.exports = (app) => {
     }
    })
 
+    let atoken = req.user.facebook.token;
 
+    let response = await rp({
+        uri: `https://graph.facebook.com/me/home/?access_token=${atoken}&limit=10`,
+        resolveWithFullResponse: true
+    })
+      
+    let fbFeeds;
+    if(response && response.body){
+      let fbPosts = JSON.parse(response.body);
+      let fbData = fbPosts.data;
+      fbFeeds = _.map(fbData, function(post){
+        let liked = post.likes && post.likes.data && post.likes.data.length > 0;
+        let likedCount = 0;
+        if(liked) {
+          likedCount = post.likes.data.length
+        }
+        return {
+            id: post.id,
+            image: post.picture,
+            text: post.description,
+            name: post.from.name,
+            username: post.name,
+            liked: liked,
+            likedCount: likedCount,            
+            network: networks.facebook
+        }
+      });
+    }
+    
+  
     res.render('timeline.ejs',{
-      posts: posts
+      twitterPosts: twitterPosts || [],
+      fbFeeds: fbFeeds || []
     })
   }));
 
@@ -270,7 +316,7 @@ module.exports = (app) => {
 
   // Facebook routes
   // Authentication route & Callback URL
-  app.get('/auth/facebook', passport.authenticate('facebook', {scope}))
+  app.get('/auth/facebook', passport.authenticate('facebook', {scope: ['read_stream']}))
   app.get('/auth/facebook/callback', passport.authenticate('facebook', {
       successRedirect: '/profile',
       failureRedirect: '/login',
@@ -278,7 +324,7 @@ module.exports = (app) => {
   }))
 
   // Authorization route & Callback URL
-  app.get('/connect/facebook', passport.authorize('facebook', {scope}))
+  app.get('/connect/facebook', passport.authorize('facebook', {scope: ['read_stream']}))
   app.get('/connect/facebook/callback', passport.authorize('facebook', {
       successRedirect: '/profile',
       failureRedirect: '/login',

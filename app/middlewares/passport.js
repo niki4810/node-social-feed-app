@@ -40,7 +40,7 @@ function useExternalPassportStrategy(OauthStrategy, config, field) {
         }
       }
       
-      if(socialNetworkType === 'facebook'){
+      if(socialNetworkType === 'facebook'){        
         let email = !_.isEmpty(account.emails) ? account.emails[0].value : "not found"         
         user.facebook =  {
             id: userId,
