@@ -112,7 +112,7 @@ module.exports = (app) => {
       // await fs.promise.writeFile('msg.txt', response.body);
       let fbPosts = JSON.parse(response.body);      
       let fbData = fbPosts.data;
-      console.log(JSON.stringify(fbData[0]));
+      // console.log(JSON.stringify(fbData[0]));
       fbFeeds = _.map(fbData, function(post){
         let likedArr = post.likes && post.likes.data;
         let liked = false;
@@ -284,7 +284,7 @@ module.exports = (app) => {
       name: response.from.name,
       username: response.name,
       liked: liked,
-      network: networks.facebook
+      network: networks.facebook      
     }
     
     res.render('reply.ejs', {
@@ -294,27 +294,38 @@ module.exports = (app) => {
   }))
 
   app.post('/reply/:id', isLoggedIn, then(async(req, res) => {
-      let twitterClient = new Twitter({
-          consumer_key: twitterConfig.consumerKey,
-          consumer_secret: twitterConfig.consumerSecret,
-          access_token_key: req.user.twitter.token,
-          access_token_secret: req.user.twitter.secret
-      })
-
+      if(!req.body && !req.body.networkName){
+        throw Error('Invalid network name')
+      }
+      
       let id = req.params.id
-      let reply = req.body.reply
-      if(!reply) {
-        return req.flash('error', 'Status cannot be empty')
-      }
+      let networkName = req.body.networkName
+      if(networkName === 'Twitter'){
+        let twitterClient = new Twitter({
+            consumer_key: twitterConfig.consumerKey,
+            consumer_secret: twitterConfig.consumerSecret,
+            access_token_key: req.user.twitter.token,
+            access_token_secret: req.user.twitter.secret
+        })
+        
+        let reply = req.body.reply
+        if(!reply) {
+          return req.flash('error', 'Status cannot be empty')
+        }
 
-      if(reply.length > 140) {
-        return req.flash('error', 'Status is over 140 characters')
-      }
+        if(reply.length > 140) {
+          return req.flash('error', 'Status is over 140 characters')
+        }
 
-      await twitterClient.promise.post('statuses/update', {
-          status: reply,
-          in_reply_to_status_id: id
-      })
+        await twitterClient.promise.post('statuses/update', {
+            status: reply,
+            in_reply_to_status_id: id
+        })
+      }else {    
+        FB.setAccessToken(req.user.facebook.token);   
+        let response = await new Promise((resolve, reject) => FB.api(`${id}/comments`, 'post', {message: req.body.reply}, resolve))  
+      }
+      
       res.redirect('/timeline')
   }))
 
