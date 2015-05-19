@@ -116,20 +116,20 @@ module.exports = (app) => {
       fbFeeds = _.map(fbData, function(post){
         let likedArr = post.likes && post.likes.data;
         let liked = false;
+        let fromId = post.from.id;
+        let fromName = post.from.name;
         if(!_.isEmpty(likedArr)){
-          let fromId = post.from.id;
-          let fromName = post.from.name;
           let filterLikedArr = _.find(likedArr, function(arr){
             if(arr.id === fromId && arr.name === fromName){
               return arr;
             }
           });
           liked = !_.isEmpty(filterLikedArr);
-        }        
+        }  
         return {
             id: post.id,
             image: post.picture,
-            text: post.description,
+            text: post.description ? post.description : post.message ? post.message : "",
             name: post.from.name,
             username: post.name,
             liked: liked,           
@@ -258,6 +258,39 @@ module.exports = (app) => {
     res.render('reply.ejs', {
         post: tweet
     })
+  }))
+
+  app.get('/fb-reply/:id', isLoggedIn, then(async (req,res) => {
+    let id = req.params.id;      
+    FB.setAccessToken(req.user.facebook.token);   
+    let response = await new Promise((resolve, reject) => FB.api('/' + id , resolve))  
+
+    let liked = false;
+        let fromId = response.from.id;
+        let fromName = response.from.name;
+        if(!_.isEmpty(response.likes.data)){
+          let filterLikedArr = _.find(response.likes.data, function(arr){
+            if(arr.id === fromId && arr.name === fromName){
+              return arr;
+            }
+          });
+          liked = !_.isEmpty(filterLikedArr);
+        } 
+
+    let fbPost = {
+      id: response.id,
+      image: response.picture,
+      text: response.message,
+      name: response.from.name,
+      username: response.name,
+      liked: liked,
+      network: networks.facebook
+    }
+    
+    res.render('reply.ejs', {
+        post: fbPost
+    })
+    
   }))
 
   app.post('/reply/:id', isLoggedIn, then(async(req, res) => {
