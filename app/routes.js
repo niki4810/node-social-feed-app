@@ -196,6 +196,39 @@ module.exports = (app) => {
       })
   }))
 
+
+  app.get('/fb-share/:id', isLoggedIn, then(async (req,res) => {
+    let id = req.params.id;      
+    FB.setAccessToken(req.user.facebook.token);   
+    let response = await new Promise((resolve, reject) => FB.api('/' + id , resolve))  
+
+    let liked = false;
+        let fromId = response.from.id;
+        let fromName = response.from.name;
+        if(!_.isEmpty(response.likes.data)){
+          let filterLikedArr = _.find(response.likes.data, function(arr){
+            if(arr.id === fromId && arr.name === fromName){
+              return arr;
+            }
+          });
+          liked = !_.isEmpty(filterLikedArr);
+        } 
+
+    let fbPost = {
+      id: response.id,
+      image: response.picture,
+      text: response.message,
+      name: response.from.name,
+      username: response.name,
+      liked: liked,
+      network: networks.facebook      
+    }
+    
+    res.render('share.ejs', {
+          post: fbPost
+      })  
+  }))
+
   app.get('/compose', isLoggedIn, (req,res) => {
     res.render('compose.ejs')
   })
@@ -297,7 +330,7 @@ module.exports = (app) => {
       if(!req.body && !req.body.networkName){
         throw Error('Invalid network name')
       }
-      
+
       let id = req.params.id
       let networkName = req.body.networkName
       if(networkName === 'Twitter'){

@@ -116,8 +116,8 @@
                             <div class="row">
                                <div class="col-xs-8 col-md-10 _icons">
                                     <i class="fa <%= fbFeed.liked ? "fa-thumbs-up" : "fa-thumbs-o-up" %> fa-2x _fbLike" name="like<%= fbFeed.id %>"></i>                    
-                                    <a href="/fb-reply/<%= fbFeed.id %>" class="fa fa-reply fa-2x"></a>
-                                    <i data-id="<%= fbFeed.retweedStatusId %>" class="fa fa-2x fa-share-square _unshare"></i>                                    
+                                    <a href="/fb-reply/<%= fbFeed.id %>" class="fa fa-reply fa-2x"></a>                                    
+                                    <a href="/fb-share/<%= fbFeed.id %>" class="fa fa-2x fa-share-square-o"></a>                                    
                                </div> 
                                <div class="col-xs-4 col-md-2">
                                    <span class="btn <%= fbFeed.network.class %>"><span class="fa fa-<%= fbFeed.network.icon %>"></span> <%= fbFeed.network.name %></a>
