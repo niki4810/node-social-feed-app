@@ -112,21 +112,27 @@ module.exports = (app) => {
       // await fs.promise.writeFile('msg.txt', response.body);
       let fbPosts = JSON.parse(response.body);      
       let fbData = fbPosts.data;
-      console.log(fbData[0]);
+      console.log(JSON.stringify(fbData[0]));
       fbFeeds = _.map(fbData, function(post){
-        let liked = post.likes && post.likes.data && post.likes.data.length > 0;
-        let likedCount = 0;
-        if(liked) {
-          likedCount = post.likes.data.length
-        }
+        let likedArr = post.likes && post.likes.data;
+        let liked = false;
+        if(!_.isEmpty(likedArr)){
+          let fromId = post.from.id;
+          let fromName = post.from.name;
+          let filterLikedArr = _.find(likedArr, function(arr){
+            if(arr.id === fromId && arr.name === fromName){
+              return arr;
+            }
+          });
+          liked = !_.isEmpty(filterLikedArr);
+        }        
         return {
             id: post.id,
             image: post.picture,
             text: post.description,
             name: post.from.name,
             username: post.name,
-            liked: liked,
-            likedCount: likedCount,            
+            liked: liked,           
             network: networks.facebook
         }
       });
@@ -219,7 +225,7 @@ module.exports = (app) => {
       })
       
 
-      await twitterClient.promise.post('statuses/update.json', {status})      
+      await twitterClient.promise.post('statuses/update', {status})      
     }else if(networkType === 'facebook') {
       FB.setAccessToken(req.user.facebook.token);      
       let response = await new Promise((resolve, reject) => FB.api('me/feed', 'post', { message: status}, resolve))
@@ -290,7 +296,6 @@ module.exports = (app) => {
     })
 
     let id = req.params.id
-    console.log(req.body.share);
     await twitterClient.promise.post('favorites/create', {id})
     res.end()
   }))
@@ -308,6 +313,21 @@ module.exports = (app) => {
     res.end()
   }))
 
+  app.post('/fb-like/:id', isLoggedIn, then(async (req,res) => {
+    let id = req.params.id   
+    FB.setAccessToken(req.user.facebook.token);   
+    let response = await new Promise((resolve, reject) => FB.api('/' + id + '/likes', 'post', resolve))
+    res.end();
+  }))
+
+  app.post('/fb-unlike/:id', isLoggedIn, then(async (req, res) => {
+    console.log("reached here");
+    let id = req.params.id   
+    FB.setAccessToken(req.user.facebook.token);   
+    let response = await new Promise((resolve, reject) => FB.api('/' + id + '/likes', 'delete', resolve))
+    res.end();
+  }));
+
   app.post('/unshare/:id', isLoggedIn, then(async (req,res) => {    
     let twitterClient = new Twitter({
       consumer_key: twitterConfig.consumerKey,
@@ -323,7 +343,7 @@ module.exports = (app) => {
 
   // Facebook routes
   // Authentication route & Callback URL
-  app.get('/auth/facebook', passport.authenticate('facebook', {scope: ['email', 'user_posts', 'read_stream', 'public_profile','user_likes', 'publish_actions']}))
+  app.get('/auth/facebook', passport.authenticate('facebook', {scope: ['email', 'user_posts', 'user_photos', 'read_stream', 'public_profile','user_likes', 'publish_actions']}))
   app.get('/auth/facebook/callback', passport.authenticate('facebook', {
       successRedirect: '/profile',
       failureRedirect: '/login',
@@ -331,7 +351,7 @@ module.exports = (app) => {
   }))
 
   // Authorization route & Callback URL
-  app.get('/connect/facebook', passport.authorize('facebook', {scope: ['email', 'user_posts', 'read_stream', 'public_profile','user_likes', 'publish_actions']}))
+  app.get('/connect/facebook', passport.authorize('facebook', {scope: ['email', 'user_posts', 'read_stream', 'user_photos', 'public_profile','user_likes', 'publish_actions']}))
   app.get('/connect/facebook/callback', passport.authorize('facebook', {
       successRedirect: '/profile',
       failureRedirect: '/login',

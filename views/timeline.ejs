@@ -115,8 +115,7 @@
                             </div>
                             <div class="row">
                                <div class="col-xs-8 col-md-10 _icons">
-                                   <i class="fa <%= fbFeed.liked ? "fa-thumbs-up" : "fa-thumbs-o-up" %> fa-2x _like" name="like<%= fbFeed.id %>"></i>
-                                   (<%= fbFeed.likedCount %>) 
+                                    <i class="fa <%= fbFeed.liked ? "fa-thumbs-up" : "fa-thumbs-o-up" %> fa-2x _fbLike" name="like<%= fbFeed.id %>"></i>                    
                                     <a href="/reply/<%= fbFeed.id %>" class="fa fa-reply fa-2x"></a>
                                     <i data-id="<%= fbFeed.retweedStatusId %>" class="fa fa-2x fa-share-square _unshare"></i>                                    
                                </div> 
@@ -142,12 +141,31 @@
         $('._like').click(function() {
             var $this = $(this)
             var id = $this.attr('name').replace('like', '')
+
             $this.toggleClass('fa-thumbs-o-up')
             $this.toggleClass('fa-thumbs-up')
             if ($this.hasClass('fa-thumbs-up')) {
                 $.post('like/' + id)
             } else {
                 $.post('unlike/' + id)
+            }                
+        })
+
+        $("._fbLike").click(function(){
+            var $this = $(this)
+            var id = $this.attr('name').replace('like', '')
+            if($this.hasClass("fa-thumbs-up")) {
+                $.post('fb-unlike/' + id, {
+                    success: function() {
+                            $this.removeClass("fa-thumbs-up");
+                            $this.addClass("fa-thumbs-o-up");
+                        }
+                    });
+            }else {
+                $.post('fb-like/' + id, {success: function(){
+                    $this.removeClass("fa-thumbs-o-up");
+                    $this.addClass("fa-thumbs-up");
+                }});                 
             }
         })
 
