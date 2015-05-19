@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+<head>
+    <title>Social Authenticator</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+    <style>
+        body { word-wrap:break-word; }
+        ._icons > a, ._icons > a:visited, ._icons > a:hover, ._icons > a:active { color: inherit; }
+        ._icons {
+            padding-top: 10px;
+        }
+
+        #twitter, #facebook, #google {
+            padding-top:10px;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="page-header text-center">
+        <h1><span class="fa fa-home"></span> Timeline</h1>
+        <a href="/compose" class="btn btn-default btn-sm">
+            <i class="fa fa-pencil-square-o"></i>&nbsp;&nbsp;&nbsp;Compose
+        </a>
+        <a href="/profile" class="btn btn-default btn-sm">Profile</a>
+        <a href="/logout" class="btn btn-default btn-sm">Logout</a><br><br>
+    </div>
+
+    <% if (typeof message !== 'undefined' && message.length > 0) { %>
+        <div class="alert alert-danger"><%= message %></div>
+    <% } %>
+
+    <div role="tabpanel">
+      <!-- Nav tabs -->
+      <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active">
+          <a href="#twitter" aria-controls="home" role="tab" data-toggle="tab">
+            <span class="fa fa-twitter"></span> Twitter
+          </a>
+        </li>
+        <li role="presentation">
+          <a href="#facebook" aria-controls="profile" role="tab" data-toggle="tab">
+            <span class="fa fa-facebook"></span> Facebook
+          </a>
+        </li>
+        <li role="presentation">
+          <a href="#google" aria-controls="messages" role="tab" data-toggle="tab">
+            <span class="fa fa-google-plus"></span> Google+
+          </a>
+        </li>
+      </ul>
+      <!-- Tab panes -->
+      <div class="tab-content">
+        <div role="tabpanel" class="tab-pane fade in active" id="twitter">
+            <div class="row">
+                <% for(var post,i=0; post=posts[i]; i++) {%>
+                    <div class="col-xs-12">
+                        <div class="well">
+                            <div class="row">
+                                <div class="col-xs-2">
+                                    <img src="<%= post.image %>"/>
+                                </div>
+                                <div class="col-xs-10">
+                                    <p>
+                                        <strong><%= post.name %></strong> <%= post.username %><br>
+                                        <%- post.text %>
+                                    </p>
+                                </div> 
+                            </div>
+                            <div class="row">
+                               <div class="col-xs-8 col-md-10 _icons">
+                                   <i class="fa <%= post.liked ? "fa-thumbs-up" : "fa-thumbs-o-up" %> fa-2x _like" name="like<%= post.id %>"></i> 
+                                    <a href="/reply/<%= post.id %>" class="fa fa-reply fa-2x"></a>
+                                    <%if (post.retweeted) {%>
+                                        <i data-id="<%= post.retweedStatusId %>" class="fa fa-2x fa-share-square _unshare"></i>
+                                    <%} else {%>
+                                        <a href="/share/<%= post.id %>" class="fa fa-2x fa-share-square-o"></a>
+                                    <% }%>                                    
+                               </div> 
+                               <div class="col-xs-4 col-md-2">
+                                   <span class="btn <%= post.network.class %>"><span class="fa fa-<%= post.network.icon %>"></span> <%= post.network.name %></a>
+                               </div>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+        <div role="tabpanel" class="tab-pane fade" id="facebook">
+            TODO
+        </div>
+        <div role="tabpanel" class="tab-pane fade" id="google">
+            TODO
+        </div>
+      </div>
+    </div>    
+</div>
+</body>
+
+<script>
+    $(function() {
+        $('._like').click(function() {
+            var $this = $(this)
+            var id = $this.attr('name').replace('like', '')
+            $this.toggleClass('fa-thumbs-o-up')
+            $this.toggleClass('fa-thumbs-up')
+            if ($this.hasClass('fa-thumbs-up')) {
+                $.post('like/' + id)
+            } else {
+                $.post('unlike/' + id)
+            }
+        })
+
+        $('._unshare').click(function(){
+            var $this = $(this)
+            var id = $this.data("id")
+            if(id){
+                $.post('unshare/' + id)                
+            }
+        })
+    })
+</script>
+</html>
