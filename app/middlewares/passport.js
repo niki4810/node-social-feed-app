@@ -2,7 +2,6 @@ let passport = require('passport')
 let LocalStrategy = require('passport-local').Strategy
 let FacebookStrategy = require('passport-facebook').Strategy
 let TwitterStrategy = require('passport-twitter').Strategy
-let GoogleStrategy = require('passport-google').Strategy
 let nodeifyit = require('nodeifyit')
 let User = require('../models/user')
 let _ = require('lodash')
@@ -80,14 +79,7 @@ function configure(config) {
         consumerSecret: config.twitter.consumerSecret,
         callbackURL: config.twitter.callbackUrl
     }, 'twitter')
-
-  useExternalPassportStrategy(GoogleStrategy, {
-        consumerKey: config.google.consumerKey,
-        consumerSecret: config.google.consumerSecret,
-        realm: config.google.realm,
-        returnURL: config.google.returnURL
-    }, 'google')
-
+  
   passport.use('local-login', new LocalStrategy({
     // Use "email" field instead of "username"
     usernameField: 'email',

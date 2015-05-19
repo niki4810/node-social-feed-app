@@ -30,6 +30,12 @@ module.exports = (app) => {
     let twitterConfig = app.config.auth.twitter
     let facebookConfig = app.config.auth.facebook
 
+    FB.options({
+        appId:          facebookConfig.consumerKey,
+        appSecret:      facebookConfig.consumerSecret,
+        redirectUri:    facebookConfig.callbackUrl
+    });
+
     app.get('/', (req, res) => res.render('index.ejs'))
 
     app.get('/profile', isLoggedIn, (req, res) => {
@@ -101,10 +107,12 @@ module.exports = (app) => {
         resolveWithFullResponse: true
     })
       
-    let fbFeeds;
-    if(response && response.body){
-      let fbPosts = JSON.parse(response.body);
+    let fbFeeds;    
+    if(response && response.body){      
+      // await fs.promise.writeFile('msg.txt', response.body);
+      let fbPosts = JSON.parse(response.body);      
       let fbData = fbPosts.data;
+      console.log(fbData[0]);
       fbFeeds = _.map(fbData, function(post){
         let liked = post.likes && post.likes.data && post.likes.data.length > 0;
         let likedCount = 0;
@@ -212,8 +220,12 @@ module.exports = (app) => {
       
 
       await twitterClient.promise.post('statuses/update.json', {status})      
-    }
-    res.redirect('/timeline')
+    }else if(networkType === 'facebook') {
+      FB.setAccessToken(req.user.facebook.token);      
+      let response = await new Promise((resolve, reject) => FB.api('me/feed', 'post', { message: status}, resolve))
+    } 
+
+    res.redirect('/timeline') 
   }))
 
 
@@ -305,18 +317,13 @@ module.exports = (app) => {
     })
 
     let id = req.params.id
-    console.log(id);
-    try{
-      await twitterClient.promise.post('statuses/destroy', {id})      
-    }catch(e){
-      console.log(e);
-    }
+    await twitterClient.promise.post('statuses/destroy', {id})      
     res.end()
   }))
 
   // Facebook routes
   // Authentication route & Callback URL
-  app.get('/auth/facebook', passport.authenticate('facebook', {scope: ['read_stream']}))
+  app.get('/auth/facebook', passport.authenticate('facebook', {scope: ['email', 'user_posts', 'read_stream', 'public_profile','user_likes', 'publish_actions']}))
   app.get('/auth/facebook/callback', passport.authenticate('facebook', {
       successRedirect: '/profile',
       failureRedirect: '/login',
@@ -324,7 +331,7 @@ module.exports = (app) => {
   }))
 
   // Authorization route & Callback URL
-  app.get('/connect/facebook', passport.authorize('facebook', {scope: ['read_stream']}))
+  app.get('/connect/facebook', passport.authorize('facebook', {scope: ['email', 'user_posts', 'read_stream', 'public_profile','user_likes', 'publish_actions']}))
   app.get('/connect/facebook/callback', passport.authorize('facebook', {
       successRedirect: '/profile',
       failureRedirect: '/login',
@@ -342,23 +349,6 @@ module.exports = (app) => {
   // Authorization route & Callback URL
   app.get('/connect/twitter', passport.authorize('twitter', {scope}))
   app.get('/connect/twitter/callback', passport.authorize('twitter', {
-      successRedirect: '/profile',
-      failureRedirect: '/login',
-      failureFlash: true
-  }))
-
-
-  //Google+ routes    
-  app.get('/auth/google', passport.authenticate('google', {scope}))
-  app.get('/auth/google/callback', passport.authenticate('google', {
-      successRedirect: '/profile',
-      failureRedirect: '/login',
-      failureFlash: true
-  }))
-
-  // Authorization route & Callback URL
-  app.get('/connect/google', passport.authorize('google', {scope}))
-  app.get('/connect/google/callback', passport.authorize('google', {
       successRedirect: '/profile',
       failureRedirect: '/login',
       failureFlash: true
