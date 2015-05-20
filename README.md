@@ -23,4 +23,10 @@ Time spent: `25`
 
 ### Walkthrough
 
-![Video Walkthrough](...)
+####Twitter
+
+![Twitter Walkthrough](https://github.com/niki4810/node-social-feed-app/raw/master/videos/social-feed-twitter.gif)
+
+####Facebook
+
+![Facebook Walkthrough](https://github.com/niki4810/node-social-feed-app/raw/master/videos/social-feed-facebook.gif)
