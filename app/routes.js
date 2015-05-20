@@ -92,12 +92,6 @@ module.exports = (app) => {
     promises.push(twitterClient.promise.get('statuses/home_timeline'))
     promises.push(new Promise((resolve, reject) => FB.api('/me/home', resolve)))
 
-
-    // promises.push(rp({
-    //     uri: `https://graph.facebook.com/me/home/?access_token=${atoken}&limit=20`,
-    //     resolveWithFullResponse: true
-    // }))
-
     let [[tweets], response] = await Promise.all(promises);     
 
     let twitterPosts = _.map(tweets, function(tweet){
@@ -181,7 +175,7 @@ module.exports = (app) => {
     } else {
         let shareLink = req.body.shareLink;
         FB.setAccessToken(req.user.facebook.token);      
-        let response = await new Promise((resolve, reject) => FB.api('me/feed', 'post', { link: shareLink}, resolve))                
+        let response = await new Promise((resolve, reject) => FB.api('me/feed', 'post', { link: shareLink, message: text || "test share"}, resolve))                
     }
           
     res.redirect('/timeline')
@@ -221,20 +215,23 @@ module.exports = (app) => {
     let response = await new Promise((resolve, reject) => FB.api('/' + id , resolve))  
 
     let liked = false;
-        let fromId = response.from.id;
-        let fromName = response.from.name;
-        if(response.likes && !_.isEmpty(response.likes.data)){
-          let filterLikedArr = _.find(response.likes.data, function(arr){
-            if(arr.id === fromId && arr.name === fromName){
-              return arr;
-            }
-          });
-          liked = !_.isEmpty(filterLikedArr);
-        } 
+    let fromId = response.from.id;
+    let fromName = response.from.name;
+    if(response.likes && !_.isEmpty(response.likes.data)){
+      let filterLikedArr = _.find(response.likes.data, function(arr){
+        if(arr.id === fromId && arr.name === fromName){
+          return arr;
+        }
+      });
+      liked = !_.isEmpty(filterLikedArr);
+    } 
+
+    let profilePicObj =  await new Promise((resolve, reject) => FB.api('/' + fromId + '/picture', {redirect:false}, resolve))
+    let profilePic = profilePicObj && profilePicObj.data ? profilePicObj.data.url : ''
 
     let fbPost = {
       id: response.id,
-      image: response.picture,
+      image: profilePic,
       text: response.message,
       name: response.from.name,
       username: response.name,
@@ -319,20 +316,22 @@ module.exports = (app) => {
     let response = await new Promise((resolve, reject) => FB.api('/' + id , resolve))  
 
     let liked = false;
-        let fromId = response.from.id;
-        let fromName = response.from.name;
-        if(response.likes && !_.isEmpty(response.likes.data)){
-          let filterLikedArr = _.find(response.likes.data, function(arr){
-            if(arr.id === fromId && arr.name === fromName){
-              return arr;
-            }
-          });
-          liked = !_.isEmpty(filterLikedArr);
-        } 
+    let fromId = response.from.id;
+    let fromName = response.from.name;
+    if(response.likes && !_.isEmpty(response.likes.data)){
+      let filterLikedArr = _.find(response.likes.data, function(arr){
+        if(arr.id === fromId && arr.name === fromName){
+          return arr;
+        }
+      });
+      liked = !_.isEmpty(filterLikedArr);
+    } 
 
+    let profilePicObj =  await new Promise((resolve, reject) => FB.api('/' + fromId + '/picture', {redirect:false}, resolve))
+    let profilePic = profilePicObj && profilePicObj.data ? profilePicObj.data.url : ''
     let fbPost = {
       id: response.id,
-      image: response.picture,
+      image: profilePic,
       text: response.message,
       name: response.from.name,
       username: response.name,
