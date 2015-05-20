@@ -86,13 +86,17 @@ module.exports = (app) => {
     })
        
     let atoken = req.user.facebook.token;
-    
+    FB.setAccessToken(atoken);
+
     let promises = [];
     promises.push(twitterClient.promise.get('statuses/home_timeline'))
-    promises.push(rp({
-        uri: `https://graph.facebook.com/me/home/?access_token=${atoken}&limit=20`,
-        resolveWithFullResponse: true
-    }))
+    promises.push(new Promise((resolve, reject) => FB.api('/me/home', resolve)))
+
+
+    // promises.push(rp({
+    //     uri: `https://graph.facebook.com/me/home/?access_token=${atoken}&limit=20`,
+    //     resolveWithFullResponse: true
+    // }))
 
     let [[tweets], response] = await Promise.all(promises);     
 
@@ -109,43 +113,42 @@ module.exports = (app) => {
         network: networks.twitter
       }
    })
+          
+  let formattedFbPosts = [];
+  if(response && response.data){      
+    let fbData = response.data;
+    for(let fbPost of fbData) {
+      let likedArr = fbPost.likes && fbPost.likes.data;
+      let liked = false;
+      let fromId = fbPost.from.id;
+      let fromName = fbPost.from.name;
+      if(!_.isEmpty(likedArr)){
+        let filterLikedArr = _.find(likedArr, function(arr){
+          if(arr.id === fromId && arr.name === fromName){
+            return arr;
+          }
+        });
+        liked = !_.isEmpty(filterLikedArr);
+      } 
 
-    
-    let fbFeeds;    
-    if(response && response.body){      
-      // await fs.promise.writeFile('msg.txt', response.body);
-      let fbPosts = JSON.parse(response.body);      
-      let fbData = fbPosts.data;
-
-      fbFeeds = _.map(fbData, function(post){
-        let likedArr = post.likes && post.likes.data;
-        let liked = false;
-        let fromId = post.from.id;
-        let fromName = post.from.name;
-        if(!_.isEmpty(likedArr)){
-          let filterLikedArr = _.find(likedArr, function(arr){
-            if(arr.id === fromId && arr.name === fromName){
-              return arr;
-            }
-          });
-          liked = !_.isEmpty(filterLikedArr);
-        }  
-        return {
-            id: post.id,
-            image: post.picture,
-            text: post.description ? post.description : post.message ? post.message : "",
-            name: post.from.name,
-            username: post.name,
-            liked: liked,          
-            network: networks.facebook
-        }
-      });
+      let profilePicObj =  await new Promise((resolve, reject) => FB.api('/' + fromId + '/picture', {redirect:false}, resolve))
+      let profilePic = profilePicObj && profilePicObj.data ? profilePicObj.data.url : ''
+      formattedFbPosts.push({
+          id: fbPost.id,
+          image: profilePic,
+          text: fbPost.description ? fbPost.description : fbPost.message ? fbPost.message : "",
+          name: fbPost.from.name,
+          username: fbPost.name,
+          liked: liked,          
+          network: networks.facebook
+      })
     }
+  }
     
   
     res.render('timeline.ejs',{
       twitterPosts: twitterPosts || [],
-      fbFeeds: fbFeeds || []
+      fbFeeds: formattedFbPosts || []
     })
   }));
 
