@@ -90,7 +90,6 @@ function configure(config) {
       'local.email': email
     })
      
-    console.log(user); 
     if(!user || user.local.email !== email) {
       return [false, {message: 'Invalid username'}]
     }  
@@ -107,12 +106,10 @@ function configure(config) {
     usernameField: 'email',
     failureFlash: true,
     passReqToCallback: true
-  }, nodeifyit(async (req, email, password) => { 
-      console.log("reached here");         
+  }, nodeifyit(async (req, email, password) => {       
       email = (email || '').toLowerCase()
       let currUser = await User.promise.findOne({'local.email': email})
 
-      console.log(currUser);
       if(currUser) {
         return [false, {message: 'User already exists'}]
       }
@@ -127,7 +124,6 @@ function configure(config) {
 
       try{
         let result = await user.save()
-        console.log(result);
         return result;
       }catch(e) {
         return [false, {message: e.message}]

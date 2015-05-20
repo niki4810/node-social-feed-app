@@ -48,6 +48,13 @@
             <div class="form-group">
                 <textarea name="text" class="form-control" rows="3" placeholder="Add a personal message..."></textarea>
             </div>
+             <input type="hidden" value="<%= post.network.name %>" name="networkName"/>
+             <% if (post.userId) { %>
+                <input type="hidden" value="<%= post.userId %>" name="userId"/>
+            <% } %>
+            <% if (post.link) { %>
+                <input type="hidden" value="<%= post.link %>" name="shareLink"/>
+            <% } %>            
             <button type="submit" class="btn btn-default">Reply</button>
         </form>
     </div>

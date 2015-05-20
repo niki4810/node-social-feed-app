@@ -84,35 +84,39 @@ module.exports = (app) => {
       access_token_key: req.user.twitter.token,
       access_token_secret: req.user.twitter.secret
     })
+       
+    let atoken = req.user.facebook.token;
     
-   let [tweets] = await twitterClient.promise.get('statuses/home_timeline') 
-   let twitterPosts = _.map(tweets, function(tweet){
-    return {
-      id: tweet.id_str,
-      image: tweet.user.profile_image_url,
-      text: tweet.text,
-      name: tweet.user.name,
-      username: "@" + tweet.user.screen_name,
-      liked: tweet.favorited,
-      retweeted: tweet.retweeted,
-      retweedStatusId: tweet.retweeted && tweet.retweeted_status ? tweet.retweeted_status.id_str : null,
-      network: networks.twitter
-    }
+    let promises = [];
+    promises.push(twitterClient.promise.get('statuses/home_timeline'))
+    promises.push(rp({
+        uri: `https://graph.facebook.com/me/home/?access_token=${atoken}&limit=20`,
+        resolveWithFullResponse: true
+    }))
+
+    let [[tweets], response] = await Promise.all(promises);     
+
+    let twitterPosts = _.map(tweets, function(tweet){
+      return {
+        id: tweet.id_str,
+        image: tweet.user.profile_image_url,
+        text: tweet.text,
+        name: tweet.user.name,
+        username: "@" + tweet.user.screen_name,
+        liked: tweet.favorited,
+        retweeted: tweet.retweeted,
+        retweedStatusId: tweet.retweeted && tweet.retweeted_status ? tweet.retweeted_status.id_str : null,
+        network: networks.twitter
+      }
    })
 
-    let atoken = req.user.facebook.token;
-
-    let response = await rp({
-        uri: `https://graph.facebook.com/me/home/?access_token=${atoken}&limit=10`,
-        resolveWithFullResponse: true
-    })
-      
+    
     let fbFeeds;    
     if(response && response.body){      
       // await fs.promise.writeFile('msg.txt', response.body);
       let fbPosts = JSON.parse(response.body);      
       let fbData = fbPosts.data;
-      // console.log(JSON.stringify(fbData[0]));
+
       fbFeeds = _.map(fbData, function(post){
         let likedArr = post.likes && post.likes.data;
         let liked = false;
@@ -132,7 +136,7 @@ module.exports = (app) => {
             text: post.description ? post.description : post.message ? post.message : "",
             name: post.from.name,
             username: post.name,
-            liked: liked,           
+            liked: liked,          
             network: networks.facebook
         }
       });
@@ -147,25 +151,36 @@ module.exports = (app) => {
 
 
   //Sharing routes
-  app.post('/share/:id', isLoggedIn, then(async (req,res) => {    
-    let twitterClient = new Twitter({
-      consumer_key: twitterConfig.consumerKey,
-      consumer_secret: twitterConfig.consumerSecret,
-      access_token_key: req.user.twitter.token,
-      access_token_secret: req.user.twitter.secret
-    })
+  app.post('/share/:id', isLoggedIn, then(async (req,res) => {  
+    if(!req.body && !req.body.networkName){
+          throw Error('Invalid network name')
+    }
+    let networkName = req.body.networkName
     let id = req.params.id
     let text = req.body.text;
-    if (text.length > 140) {
-            return req.flash('error', 'Status is over 140 characters')
-    }
-    if (!text.length) {
-        return req.flash('error', 'Status cannot be empty')
-    }
-            
 
-    await twitterClient.promise.post('statuses/retweet/' + id, {text})
-        
+    if(networkName === 'Twitter') {
+      let twitterClient = new Twitter({
+        consumer_key: twitterConfig.consumerKey,
+        consumer_secret: twitterConfig.consumerSecret,
+        access_token_key: req.user.twitter.token,
+        access_token_secret: req.user.twitter.secret
+      })
+      
+      if (text.length > 140) {
+          return req.flash('error', 'Status is over 140 characters')
+      }
+      if (!text.length) {
+          return req.flash('error', 'Status cannot be empty')
+      }
+              
+      await twitterClient.promise.post('statuses/retweet/' + id, {text})  
+    } else {
+        let shareLink = req.body.shareLink;
+        FB.setAccessToken(req.user.facebook.token);      
+        let response = await new Promise((resolve, reject) => FB.api('me/feed', 'post', { link: shareLink}, resolve))                
+    }
+          
     res.redirect('/timeline')
   }))
 
@@ -205,7 +220,7 @@ module.exports = (app) => {
     let liked = false;
         let fromId = response.from.id;
         let fromName = response.from.name;
-        if(!_.isEmpty(response.likes.data)){
+        if(response.likes && !_.isEmpty(response.likes.data)){
           let filterLikedArr = _.find(response.likes.data, function(arr){
             if(arr.id === fromId && arr.name === fromName){
               return arr;
@@ -220,7 +235,9 @@ module.exports = (app) => {
       text: response.message,
       name: response.from.name,
       username: response.name,
+      userId: fromId,
       liked: liked,
+      link: response.link,
       network: networks.facebook      
     }
     
@@ -261,7 +278,7 @@ module.exports = (app) => {
       await twitterClient.promise.post('statuses/update', {status})      
     }else if(networkType === 'facebook') {
       FB.setAccessToken(req.user.facebook.token);      
-      let response = await new Promise((resolve, reject) => FB.api('me/feed', 'post', { message: status}, resolve))
+      let response = await new Promise((resolve, reject) => FB.api('me/feed', 'post', { message: status }, resolve))
     } 
 
     res.redirect('/timeline') 
@@ -301,7 +318,7 @@ module.exports = (app) => {
     let liked = false;
         let fromId = response.from.id;
         let fromName = response.from.name;
-        if(!_.isEmpty(response.likes.data)){
+        if(response.likes && !_.isEmpty(response.likes.data)){
           let filterLikedArr = _.find(response.likes.data, function(arr){
             if(arr.id === fromId && arr.name === fromName){
               return arr;
